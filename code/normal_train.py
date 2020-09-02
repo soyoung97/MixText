@@ -1,33 +1,36 @@
+from fairseq import libbleu
 import argparse
 import os
 import random
 import math
-
+import nsml
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.data as Data
-from pytorch_transformers import *
+from transformers import *
+set_seed(45)
 from torch.autograd import Variable
 from torch.utils.data import Dataset
 
 from read_data import *
 from normal_bert import ClassificationBert
 
+
 parser = argparse.ArgumentParser(description='PyTorch Base Models')
 
-parser.add_argument('--epochs', default=50, type=int, metavar='N',
+parser.add_argument('--epochs', default=50, type=int,
                     help='number of total epochs to run')
-parser.add_argument('--batch-size', default=4, type=int, metavar='N',
+parser.add_argument('--batch-size', default=4, type=int,
                     help='train batchsize')
-parser.add_argument('--batch-size-u', default=24, type=int, metavar='N',
+parser.add_argument('--batch-size-u', default=24, type=int,
                     help='train batchsize')
 
 parser.add_argument('--lrmain', '--learning-rate-bert', default=0.00001, type=float,
-                    metavar='LR', help='initial learning rate for bert')
+                     help='initial learning rate for bert')
 parser.add_argument('--lrlast', '--learning-rate-model', default=0.001, type=float,
-                    metavar='LR', help='initial learning rate for models')
+                    help='initial learning rate for models')
 
 parser.add_argument('--gpu', default='0,1,2,3', type=str,
                     help='id(s) for CUDA_VISIBLE_DEVICES')
@@ -38,9 +41,9 @@ parser.add_argument('--val-iteration', type=int, default=200,
                     help='Number of labeled data')
 
 
-parser.add_argument('--mix-option', default=False, type=bool, metavar='N',
+parser.add_argument('--mix-option', action='store_true',
                     help='mix option')
-parser.add_argument('--train_aug', default=False, type=bool, metavar='N',
+parser.add_argument('--train_aug', action='store_true',
                     help='aug for training data')
 
 
