@@ -11,13 +11,15 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.data as Data
 from transformers import *
-set_seed(45)
 from torch.autograd import Variable
 from torch.utils.data import Dataset
 
 from read_data import *
 from mixtext import MixText
-
+os.system("pip install fastBPE")
+import fastBPE
+random.seed(45)
+torch.manual_seed(45)
 
 parser = argparse.ArgumentParser(description='PyTorch MixText')
 

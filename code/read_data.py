@@ -5,6 +5,7 @@ from torch.utils.data import Dataset
 from transformers import *
 import torch.utils.data as Data
 import pickle
+import random
 
 
 class Translator:
@@ -144,22 +145,36 @@ class loader_labeled(Dataset):
 
         self.aug = aug
         self.trans_dist = {}
-
+        """
         if aug:
             print('Aug train data by back translation of German')
             self.en2de = torch.hub.load(
                 'pytorch/fairseq', 'transformer.wmt19.en-de.single_model', tokenizer='moses', bpe='fastbpe')
             self.de2en = torch.hub.load(
                 'pytorch/fairseq', 'transformer.wmt19.de-en.single_model', tokenizer='moses', bpe='fastbpe')
-
+        """
     def __len__(self):
         return len(self.labels)
 
-    def augment(self, text):
+    def augment_mixtext(self, text):
         if text not in self.trans_dist:
             self.trans_dist[text] = self.de2en.translate(self.en2de.translate(
                 text,  sampling=True, temperature=0.9),  sampling=True, temperature=0.9)
         return self.trans_dist[text]
+
+    def augment(self, text):
+        text_ref = random.choice(self.text)
+        encode_result, length = self.get_tokenized(text)
+        encode_result_ref, length_ref = self.get_tokenized(text_ref)
+        max_sample_range = min(length, length_ref)
+        window_size = max_sample_range // 10
+        start_idx = random.randrange(0, max_sample_range - window_size)
+        end_idx = start_idx + window_size
+        ref_result = encode_result[::].cuda()
+        ref_result[start_idx:end_idx] = encode_result_ref[start_idx:end_idx]
+        return " ".join(self.tokenizer.convert_ids_to_tokens(ref_result))
+
+
 
     def get_tokenized(self, text):
         tokens = self.tokenizer.tokenize(text)

@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from transformers import *
 from transformers.modeling_bert import BertEmbeddings, BertPooler, BertLayer
-
+from normal_bert import ClassificationBert, MixupBert
 
 class BertModel4Mix(BertPreTrainedModel):
     def __init__(self, config):
@@ -159,11 +159,13 @@ class BertEncoder4Mix(nn.Module):
 class MixText(nn.Module):
     def __init__(self, num_labels=2, mix_option=False):
         super(MixText, self).__init__()
+        self.mix_option = mix_option
 
         if mix_option:
             self.bert = BertModel4Mix.from_pretrained('bert-base-uncased')
         else:
-            self.bert = BertModel.from_pretrained('bert-base-uncased')
+            self.bert = ClassificationBert(num_labels).cuda()
+            #self.bert = MixupBert(num_labels).cuda()
 
         self.linear = nn.Sequential(nn.Linear(768, 128),
                                     nn.Tanh(),
@@ -172,16 +174,20 @@ class MixText(nn.Module):
     def forward(self, x, x2=None, l=None, mix_layer=1000):
 
         if x2 is not None:
-            all_hidden, pooler = self.bert(x, x2, l, mix_layer)
-
-            pooled_output = torch.mean(all_hidden, 1)
+            if self.mix_option:
+                all_hidden, _ = self.bert(x, x2, l, mix_layer)
+                pooled_output = torch.mean(all_hidden, 1)
+                predict = self.linear(pooled_output)
+                return predict
+            else:
+                x_aug = self.augment(x, x2)
+                predict_x = self.bert(x)
+                predict_aug = self.bert(x_aug)
+                return predict_x, predict_aug
 
         else:
-            all_hidden, pooler = self.bert(x)
-
+            all_hidden, _ = self.bert(x)
             pooled_output = torch.mean(all_hidden, 1)
-
-        predict = self.linear(pooled_output)
-
-        return predict
+            predict = self.linear(pooled_output)
+            return predict
 
